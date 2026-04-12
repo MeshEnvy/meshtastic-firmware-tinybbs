@@ -1,3 +1,98 @@
+# TinyBBS
+
+A Meshtastic BBS (Bulletin Board System) module with games, mail, geocoding, and emergency survival guide — built as a [MeshForge](https://meshforge.org) project.
+
+## Overview
+
+TinyBBS adds a full-featured BBS to any Meshtastic node. Users interact via direct message using a menu-driven interface:
+
+- **Bulletins** — multiple boards (General, Info, News, Urgent)
+- **Private mail** — node-to-node messaging with subjects
+- **QSL board** — radio contact logging with signal quality
+- **Games** — Wordle, Vault-Tec word hacking, Chess by mail, Fallout Wasteland RPG
+- **Survival guide** — emergency reference (water, fire, shelter, first aid, navigation…)
+- **Reverse geocoding** — location lookups from GPS coordinates
+
+## This is a MeshForge project
+
+**Flash and data installation are handled automatically** by the [MeshForge web flasher](https://meshforge.org).
+
+1. Open the MeshForge flasher
+2. Select your device and the TinyBBS firmware build
+3. Click **Flash** — the flasher writes the firmware and then automatically uploads the data files (Wordle dictionary, geocoding database, survival guide) to your device's external flash
+
+No manual steps, no scripts to run, no serial terminal required.
+
+## Supported devices
+
+| Board | PlatformIO env | Platform |
+|-------|---------------|----------|
+| Lilygo T-Echo | `t-echo` | nRF52840 |
+| Lilygo T-Echo Lite | `t-echo-lite` | nRF52840 |
+| Lilygo T-Echo Plus | `t-echo-plus` | nRF52840 |
+| RAK WisMesh Tap | `rak_wismeshtap` | nRF52840 |
+| B&Q Nano G2 Ultra | `nano-g2-ultra` | nRF52840 |
+| Heltec Mesh Node T114 | `heltec_mesh_node_t114` | nRF52840 |
+| Lilygo T-Deck | `t-deck` | ESP32-S3 |
+
+nRF52840 boards require an external QSPI flash chip to be present for the data files. ESP32 targets use the LittleFS partition.
+
+## Building locally
+
+```bash
+pio run -e <target>   # e.g. pio run -e t-echo
+```
+
+PlatformIO will automatically:
+1. Generate the data files (`bbs-data/*.bin`) via `extra_scripts/gen_meshforge_data.py`
+2. Compile the firmware with the `meshenvy/meshforge-sideload` library
+
+## Data files
+
+Generated at build time and sideloaded by MeshForge after flashing. Declared in `meshforge.yaml`:
+
+```yaml
+meshforge:
+  data:
+    - bbs-data/*.bin:/ext/bbs/kb
+```
+
+| File | Description | Size |
+|------|-------------|------|
+| `wordle.bin` | 9,981-word validation dictionary | ~49 KB |
+| `geo_us.bin` | US city geocoding index (GeoNames) | ~370 KB |
+| `survival.bin` | Emergency survival guide | ~11 KB |
+
+To regenerate manually:
+
+```bash
+python3 scripts/gen_wordle_packed.py
+python3 scripts/gen_geo_packed.py
+python3 scripts/gen_survival_packed.py
+```
+
+## Commands
+
+Send any of these as a direct message to your TinyBBS node:
+
+```
+(empty or ?)    Main menu
+B               Bulletin board menu
+M               Mail menu
+Q               QSL board
+G               Games menu
+S               System stats
+H               Help
+```
+
+## MeshForge sideload library
+
+TinyBBS uses the [`meshforge-sideload`](https://registry.platformio.org/libraries/meshenvy/meshforge-sideload) PlatformIO library for post-flash data delivery. The library listens on Serial for `0xBB`-framed file transfer frames, routes `/ext/` paths to external QSPI flash (nRF52) or LittleFS (ESP32), and is polled from `BBSModule::runOnce()` with no Meshtastic core changes required.
+
+---
+
+<!-- Meshtastic firmware README below -->
+
 <div align="center" markdown="1">
 
 <img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="80"/>
@@ -21,7 +116,7 @@
 	<a href="https://meshtastic.org/docs/">Documentation</a>
 </div>
 
-## Overview
+## Meshtastic Overview
 
 This repository contains the official device firmware for Meshtastic, an open-source LoRa mesh networking project designed for long-range, low-power communication without relying on internet or cellular infrastructure. The firmware supports various hardware platforms, including ESP32, nRF52, RP2040/RP2350, and Linux-based devices.
 
