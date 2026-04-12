@@ -366,25 +366,12 @@ static Adafruit_LittleFS &_fsForMount(FsMount mount)
 
 // ── Public helpers ────────────────────────────────────────────────────────────
 
-File fsOpenRead(const FSRoute &r)
-{
 #if defined(ARCH_NRF52)
-    return _fsForMount(r.mount).open(r.path, FILE_O_READ);
-#else
-    (void)r.mount;
-    return FSCom.open(r.path, FILE_O_READ);
-#endif
-}
-
-File fsOpenWrite(const FSRoute &r)
+Adafruit_LittleFS &fsGetFS(const FSRoute &r)
 {
-#if defined(ARCH_NRF52)
-    return _fsForMount(r.mount).open(r.path, FILE_O_WRITE);
-#else
-    (void)r.mount;
-    return FSCom.open(r.path, FILE_O_WRITE);
-#endif
+    return _fsForMount(r.mount);
 }
+#endif
 
 bool fsRemove(const FSRoute &r)
 {

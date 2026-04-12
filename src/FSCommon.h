@@ -99,11 +99,19 @@ struct FSRoute {
 /** Resolve a path string to an FSRoute (mount + stripped path). */
 FSRoute fsRoute(const char *path);
 
-/** Open a file for reading on the routed filesystem. */
-File fsOpenRead(const FSRoute &r);
-
-/** Open a file for writing on the routed filesystem. */
-File fsOpenWrite(const FSRoute &r);
+/**
+ * Return a reference to the FS instance for this route.
+ *
+ * IMPORTANT: Do not wrap .open() in a helper that returns File by value.
+ * Adafruit_LittleFS::File closes the handle on destruction, so returning File
+ * across a function boundary destroys the temporary and closes the file.
+ * Always call fsGetFS(r).open(r.path, mode) at the call site.
+ */
+#if defined(ARCH_NRF52)
+Adafruit_LittleFS& fsGetFS(const FSRoute &r);
+#else
+#define fsGetFS(r) FSCom
+#endif
 
 /** Remove a file on the routed filesystem. Returns true on success. */
 bool fsRemove(const FSRoute &r);
