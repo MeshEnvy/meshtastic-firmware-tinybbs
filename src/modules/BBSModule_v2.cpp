@@ -787,7 +787,7 @@ ProcessMessage BBSModule::dispatchState(const meshtastic_MeshPacket &mp, BBSSess
         case BBS_STATE_VAULT:          return handleStateVault(mp, session, text);
         case BBS_STATE_WASTELAND:      return handleStateWasteland(mp, session, text);
         case BBS_STATE_CHESS:          return handleStateChess(mp, session, text);
-#ifndef BBS_LITE
+#if defined(NRF52_SERIES) && !defined(BBS_LITE)
         case BBS_STATE_SURVIVAL:       return handleStateSurvival(mp, session, text);
 #endif
         default:
@@ -949,7 +949,7 @@ ProcessMessage BBSModule::handleStateMain(const meshtastic_MeshPacket &mp, BBSSe
             session.state = BBS_STATE_IDLE;
             sendReply(mp, "73 de TinyBBS - bye!");
             break;
-#ifndef BBS_LITE
+#if defined(NRF52_SERIES) && !defined(BBS_LITE)
         case 'e':
             session.state = BBS_STATE_SURVIVAL;
             {

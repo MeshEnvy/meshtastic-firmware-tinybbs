@@ -14,6 +14,7 @@
 #ifdef NRF52_SERIES
 
 #include "Adafruit_LittleFS.h"
+using namespace Adafruit_LittleFS_Namespace;
 
 #define EXTFLASH_TOTAL_SIZE   (2 * 1024 * 1024)   // 2 MB
 #define EXTFLASH_SECTOR_SIZE  4096                  // 4 KB erase sector
