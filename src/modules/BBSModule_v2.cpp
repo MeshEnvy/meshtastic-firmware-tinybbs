@@ -1,5 +1,5 @@
 #include "BBSModule_v2.h"
-#include "MeshForgeSideload.h"
+#include "FSCommon.h"
 #include "BBSWordle.h"
 #ifndef BBS_LITE
 #include "BBSSurvival.h"
@@ -11,7 +11,7 @@
 #endif
 #ifdef NRF52_SERIES
 #include "BBSStorageExtFlash.h"
-#include "BBSExtFlash.h"
+
 #ifndef BBS_LITE
 #ifdef BBS_KB_LOADER
 // BBSKBLoader.h removed — data files are sideloaded by MeshForge after flashing
@@ -38,21 +38,7 @@
 
 BBSModule *bbsModule;
 
-// ── MeshForge sideload ────────────────────────────────────────────────────────
-// Global sideload handler — polled from BBSModule::runOnce().
-static MeshForgeSideload meshForgeSideload;
-
-// Provide bbsExtFS() as the /ext/ filesystem for the sideload library on nRF52.
-// This overrides the weak default in MeshForgeSideload.cpp.
-// Guard matches MFSL_PLATFORM_NRF52 from MeshForgeSideload.h; Adafruit_LittleFS
-// is available unqualified via the `using namespace` applied by that header.
-#if defined(MFSL_PLATFORM_NRF52)
-#include "BBSExtFlash.h"
-Adafruit_LittleFS& meshforgeSideloadExtFS() {
-    return bbsExtFS();
-}
-#endif
-// ─────────────────────────────────────────────────────────────────────────────
+// extFS is set by Meshtastic's extFSInit() during fsInit() — no override needed.
 
 static const char *const BOARD_NAMES[BOARD_COUNT] = {"General", "Info", "News", "Urgent"};
 static const char BOARD_KEYS[BOARD_COUNT] = {'g', 'i', 'n', 'u'};
@@ -97,7 +83,6 @@ void BBSModule::setup() {
     wordleEnsureDir(); // ensure /bbs/wdl/ exists for Wordle score persistence
     frpgEnsureDir();   // ensure /bbs/frpg/ exists for Wasteland RPG
 #endif
-    meshForgeSideload.begin();
 }
 
 #if defined(NRF52_SERIES) && !defined(BBS_LITE)
@@ -171,8 +156,6 @@ ProcessMessage BBSModule::handleStateSurvival(const meshtastic_MeshPacket &mp,
 #endif
 
 int32_t BBSModule::runOnce() {
-    meshForgeSideload.poll();
-
     uint32_t t = getTime();
 
     // Wait until time is synced (must be after 2020-01-01)
@@ -362,10 +345,12 @@ ProcessMessage BBSModule::handleReceived(const meshtastic_MeshPacket &mp) {
             // Report what was written
             char kbMsg[180];
             uint32_t wSize = 0, gSize = 0;
-            File wf = bbsExtFS().open("/bbs/kb/wordle.bin", FILE_O_READ);
-            if (wf) { wSize = wf.size(); wf.close(); }
-            File gf = bbsExtFS().open("/bbs/kb/geo_us.bin", FILE_O_READ);
-            if (gf) { gSize = gf.size(); gf.close(); }
+            if (extFS) {
+                File wf = extFS->open("/bbs/kb/wordle.bin", FILE_O_READ);
+                if (wf) { wSize = wf.size(); wf.close(); }
+                File gf = extFS->open("/bbs/kb/geo_us.bin", FILE_O_READ);
+                if (gf) { gSize = gf.size(); gf.close(); }
+            }
             snprintf(kbMsg, sizeof(kbMsg),
                      "KB: %s\nwordle:%u geo:%u",
                      kbOk ? "OK" : "FAIL",

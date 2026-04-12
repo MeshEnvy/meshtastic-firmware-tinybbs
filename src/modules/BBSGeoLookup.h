@@ -49,13 +49,14 @@ static bool geoLookupNearest(float lat, float lon, char *city, size_t cityLen) {
 // ── External flash lookup (packed binary with spatial index) ───────────────
 
 #ifdef NRF52_SERIES
-#include "BBSExtFlash.h"
+#include "FSCommon.h"
 
 static bool geoLookupFromExtFlash(float lat, float lon, char *city, size_t cityLen) {
     if (!city || cityLen == 0) return false;
     city[0] = '\0';
+    if (!extFS) return false;
 
-    File f = bbsExtFS().open(GEO_DB_PATH, FILE_O_READ);
+    File f = extFS->open(GEO_DB_PATH, FILE_O_READ);
     if (!f) return false;
 
     // Read header

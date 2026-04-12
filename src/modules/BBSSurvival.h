@@ -18,7 +18,7 @@
 
 #if defined(NRF52_SERIES) && !defined(BBS_LITE)
 
-#include "BBSExtFlash.h"
+#include "FSCommon.h"
 #include <cstring>
 
 #define KB_SURVIVAL_PATH  "/bbs/kb/survival.bin"
@@ -35,7 +35,8 @@ static bool survivalGetRandom(uint32_t seed, char *buf, size_t bufLen) {
     if (!buf || bufLen == 0) return false;
     buf[0] = '\0';
 
-    File f = bbsExtFS().open(KB_SURVIVAL_PATH, FILE_O_READ);
+    if (!extFS) return false;
+    File f = extFS->open(KB_SURVIVAL_PATH, FILE_O_READ);
     if (!f) return false;
 
     uint32_t magic = 0;
@@ -70,7 +71,8 @@ static bool survivalGetRandom(uint32_t seed, char *buf, size_t bufLen) {
 
 // Get category count
 static uint16_t survivalCategoryCount() {
-    File f = bbsExtFS().open(KB_SURVIVAL_PATH, FILE_O_READ);
+    if (!extFS) return 0;
+    File f = extFS->open(KB_SURVIVAL_PATH, FILE_O_READ);
     if (!f) return 0;
     uint32_t magic = 0;
     uint16_t catCount = 0;
@@ -83,7 +85,8 @@ static uint16_t survivalCategoryCount() {
 
 // Get category name by index
 static bool survivalCategoryName(uint16_t catIdx, char *name, size_t nameLen) {
-    File f = bbsExtFS().open(KB_SURVIVAL_PATH, FILE_O_READ);
+    if (!extFS) return false;
+    File f = extFS->open(KB_SURVIVAL_PATH, FILE_O_READ);
     if (!f) return false;
     uint32_t magic = 0;
     uint16_t catCount = 0;
@@ -105,7 +108,8 @@ static bool survivalGetTip(uint16_t catIdx, uint16_t tipIdx, char *buf, size_t b
     if (!buf || bufLen == 0) return false;
     buf[0] = '\0';
 
-    File f = bbsExtFS().open(KB_SURVIVAL_PATH, FILE_O_READ);
+    if (!extFS) return false;
+    File f = extFS->open(KB_SURVIVAL_PATH, FILE_O_READ);
     if (!f) return false;
 
     uint32_t magic = 0;
