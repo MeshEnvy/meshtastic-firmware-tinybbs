@@ -1,4 +1,5 @@
 #include "BBSModule_v2.h"
+#include "MeshForgeSideload.h"
 #include "BBSWordle.h"
 #ifndef BBS_LITE
 #include "BBSSurvival.h"
@@ -13,7 +14,7 @@
 #include "BBSExtFlash.h"
 #ifndef BBS_LITE
 #ifdef BBS_KB_LOADER
-#include "BBSKBLoader.h"
+// BBSKBLoader.h removed — data files are sideloaded by MeshForge after flashing
 #endif
 #endif
 #endif
@@ -36,6 +37,20 @@
 #endif
 
 BBSModule *bbsModule;
+
+// ── MeshForge sideload ────────────────────────────────────────────────────────
+// Global sideload handler — polled from BBSModule::runOnce().
+static MeshForgeSideload meshForgeSideload;
+
+// Provide bbsExtFS() as the /ext/ filesystem for the sideload library on nRF52.
+// This overrides the weak default in MeshForgeSideload.cpp.
+#if defined(NRF52_SERIES) || defined(ARDUINO_ARCH_NRF52)
+#include "BBSExtFlash.h"
+Adafruit_LittleFS_Namespace::Adafruit_LittleFS& meshforgeSideloadExtFS() {
+    return bbsExtFS();
+}
+#endif
+// ─────────────────────────────────────────────────────────────────────────────
 
 static const char *const BOARD_NAMES[BOARD_COUNT] = {"General", "Info", "News", "Urgent"};
 static const char BOARD_KEYS[BOARD_COUNT] = {'g', 'i', 'n', 'u'};
@@ -80,10 +95,11 @@ void BBSModule::setup() {
     wordleEnsureDir(); // ensure /bbs/wdl/ exists for Wordle score persistence
     frpgEnsureDir();   // ensure /bbs/frpg/ exists for Wasteland RPG
 #endif
+    meshForgeSideload.begin();
 }
 
 #if defined(NRF52_SERIES) && !defined(BBS_LITE)
-// Simple base64 decode (in-place, returns decoded length)
+// Simple base64 decode — retained for chat-based KB commands via !kb DM
 static size_t b64decode(const char *in, uint8_t *out, size_t maxOut) {
     static const uint8_t T[128] = {
         64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
@@ -172,135 +188,13 @@ ProcessMessage BBSModule::handleStateSurvival(const meshtastic_MeshPacket &mp,
     return ProcessMessage::STOP;
 }
 
-void BBSModule::handleKBUpload(const char *cmd) {
-    using namespace Adafruit_LittleFS_Namespace;
-
-    if (strncmp(cmd, "OPEN ", 5) == 0) {
-        char path[64] = {0};
-        uint32_t size = 0;
-        if (sscanf(cmd + 5, "%63s %u", path, &size) != 2) {
-            LOG_WARN("[KB] Bad OPEN args\n");
-            return;
-        }
-        if (kbFile_) { ((File *)kbFile_)->close(); delete (File *)kbFile_; kbFile_ = nullptr; }
-        if (!bbsExtFS().exists("/bbs")) bbsExtFS().mkdir("/bbs");
-        if (!bbsExtFS().exists("/bbs/kb")) bbsExtFS().mkdir("/bbs/kb");
-        if (bbsExtFS().exists(path)) bbsExtFS().remove(path);
-        File f = bbsExtFS().open(path, FILE_O_WRITE);
-        if (!f) { LOG_ERROR("[KB] Can't open %s\n", path); return; }
-        kbFile_ = new File(f);
-        kbExpected_ = size;
-        kbReceived_ = 0;
-        LOG_INFO("[KB] OPEN %s (%u bytes)\n", path, size);
-    }
-    else if (strncmp(cmd, "DATA ", 5) == 0) {
-        if (!kbFile_) return;
-        uint8_t decoded[200];
-        size_t n = b64decode(cmd + 5, decoded, sizeof(decoded));
-        if (n > 0) {
-            ((File *)kbFile_)->write(decoded, n);
-            kbReceived_ += n;
-        }
-    }
-    else if (strncmp(cmd, "CLOSE", 5) == 0) {
-        if (kbFile_) {
-            ((File *)kbFile_)->close();
-            delete (File *)kbFile_;
-            kbFile_ = nullptr;
-            LOG_INFO("[KB] CLOSE %u/%u bytes\n", kbReceived_, kbExpected_);
-        }
-    }
-    else if (strncmp(cmd, "LIST", 4) == 0) {
-        File dir = bbsExtFS().open("/bbs/kb", FILE_O_READ);
-        if (dir) {
-            File f(bbsExtFS());
-            while ((f = dir.openNextFile())) {
-                LOG_INFO("[KB] %s %u\n", f.name(), (uint32_t)f.size());
-                f.close();
-            }
-            dir.close();
-        }
-    }
-}
-#endif
-
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
-// Called from StreamAPI when it sees a 0xBB byte — we handle the full frame here
-static void *_kbFile = nullptr;
-static uint32_t _kbExpected = 0, _kbReceived = 0;
-
-void bbsSerialFrameHandler(Stream *stream, uint8_t firstByte) {
-    using namespace Adafruit_LittleFS_Namespace;
-
-    // Read rest of header: cmd(1) + len(2)
-    uint8_t hdr[3];
-    if (stream->readBytes(hdr, 3) != 3) return;
-    uint8_t cmd = hdr[0];
-    uint16_t dataLen = hdr[1] | (hdr[2] << 8);
-    if (dataLen > 512) return;
-
-    // Read payload + CRC
-    uint8_t payload[514];
-    if (stream->readBytes(payload, dataLen + 1) != (size_t)(dataLen + 1)) return;
-
-    // CRC check
-    uint8_t crcData[4] = {firstByte, cmd, hdr[1], hdr[2]};
-    uint8_t crc = 0;
-    for (int i = 0; i < 4; i++) { crc ^= crcData[i]; for (int j = 0; j < 8; j++) crc = (crc & 0x80) ? ((crc << 1) ^ 0x07) : (crc << 1); }
-    for (uint16_t i = 0; i < dataLen; i++) { crc ^= payload[i]; for (int j = 0; j < 8; j++) crc = (crc & 0x80) ? ((crc << 1) ^ 0x07) : (crc << 1); }
-    if (crc != payload[dataLen]) {
-        uint8_t resp[3] = {0xBB, 0x80, 1};
-        stream->write(resp, 3);
-        return;
-    }
-
-    uint8_t status = 1; // default ERR
-
-    if (cmd == 0x01 && dataLen >= 6) { // OPEN
-        uint8_t pathLen = payload[0];
-        char path[64] = {0};
-        memcpy(path, payload + 1, pathLen < 63 ? pathLen : 63);
-        uint32_t fsize;
-        memcpy(&fsize, payload + 1 + pathLen, 4);
-
-        if (_kbFile) { ((File *)_kbFile)->close(); delete (File *)_kbFile; _kbFile = nullptr; }
-        bbsExtFS().begin(); // ensure ext flash is mounted
-        if (!bbsExtFS().exists("/bbs")) bbsExtFS().mkdir("/bbs");
-        if (!bbsExtFS().exists("/bbs/kb")) bbsExtFS().mkdir("/bbs/kb");
-        if (bbsExtFS().exists(path)) bbsExtFS().remove(path);
-        File f = bbsExtFS().open(path, FILE_O_WRITE);
-        if (f) {
-            _kbFile = new File(f);
-            _kbExpected = fsize;
-            _kbReceived = 0;
-            status = 0;
-        }
-    } else if (cmd == 0x02 && _kbFile) { // DATA
-        uint8_t ramBuf[256];
-        uint16_t pos = 0;
-        while (pos < dataLen) {
-            uint16_t chunk = dataLen - pos;
-            if (chunk > sizeof(ramBuf)) chunk = sizeof(ramBuf);
-            memcpy(ramBuf, payload + pos, chunk);
-            ((File *)_kbFile)->write(ramBuf, chunk);
-            pos += chunk;
-        }
-        _kbReceived += dataLen;
-        status = 0;
-    } else if (cmd == 0x03) { // CLOSE
-        if (_kbFile) { ((File *)_kbFile)->close(); delete (File *)_kbFile; _kbFile = nullptr; }
-        status = 0;
-    } else if (cmd == 0x04) { // LIST
-        status = 0;
-    }
-
-    uint8_t resp[3] = {0xBB, 0x80, status};
-    stream->write(resp, 3);
-    ((Stream *)stream)->flush();
-}
+// handleKBUpload and bbsSerialFrameHandler removed — replaced by MeshForgeSideload library.
+// File transfer is now handled by meshForgeSideload.poll() called from runOnce().
 #endif
 
 int32_t BBSModule::runOnce() {
+    meshForgeSideload.poll();
+
     uint32_t t = getTime();
 
     // Wait until time is synced (must be after 2020-01-01)
@@ -554,13 +448,7 @@ ProcessMessage BBSModule::handleReceived(const meshtastic_MeshPacket &mp) {
 
     if (isDM) {
         const char *text = buf;
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
-        // Knowledge base upload commands (!KB OPEN/DATA/CLOSE)
-        if (strncasecmp(text, "!KB ", 4) == 0) {
-            handleKBUpload(text + 4);
-            return ProcessMessage::STOP;
-        }
-#endif
+// !KB DM commands removed — data files are sideloaded by MeshForge after flashing
         if (strncasecmp(text, "!bbs", 4) == 0) {
             text += 4;
             while (*text == ' ' || *text == '\t') text++;

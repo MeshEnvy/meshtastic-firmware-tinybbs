@@ -1,0 +1,5 @@
+meshforge:
+  targets:
+    require_capabilities: [ext-flash]
+  data:
+    - bbs-data/*.bin:/ext/bbs/kb

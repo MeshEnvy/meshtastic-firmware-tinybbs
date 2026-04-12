@@ -1,6 +1,9 @@
 .pio
 pio
 pio.tar
+
+# MeshForge generated data files (produced by extra_scripts/gen_meshforge_data.py)
+bbs-data/
 web
 web.tar
 

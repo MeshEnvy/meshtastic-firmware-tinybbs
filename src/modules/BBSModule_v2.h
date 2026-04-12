@@ -170,10 +170,6 @@ class BBSModule : public SinglePortModule, private concurrency::OSThread {
 
 #if defined(NRF52_SERIES) && !defined(BBS_LITE)
     ProcessMessage handleStateSurvival(const meshtastic_MeshPacket &mp, BBSSession &session, const char *text);
-    void handleKBUpload(const char *cmd);
-    void *kbFile_ = nullptr;
-    uint32_t kbExpected_ = 0;
-    uint32_t kbReceived_ = 0;
 #endif
 
     // OSThread periodic task (private inheritance)
