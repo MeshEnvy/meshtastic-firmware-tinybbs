@@ -1,5 +1,6 @@
 meshforge:
   targets:
     require_capabilities: [ext-flash]
+    include: "^(t-echo|t-echo-lite|t-echo-plus|rak_wismeshtap|nano-g2-ultra|heltec_mesh_node_t114)$"
   data:
     - bbs-data/*.bin:/ext/bbs/kb

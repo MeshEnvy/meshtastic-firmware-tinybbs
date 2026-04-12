@@ -44,9 +44,11 @@ static MeshForgeSideload meshForgeSideload;
 
 // Provide bbsExtFS() as the /ext/ filesystem for the sideload library on nRF52.
 // This overrides the weak default in MeshForgeSideload.cpp.
-#if defined(NRF52_SERIES) || defined(ARDUINO_ARCH_NRF52)
+// Guard matches MFSL_PLATFORM_NRF52 from MeshForgeSideload.h; Adafruit_LittleFS
+// is available unqualified via the `using namespace` applied by that header.
+#if defined(MFSL_PLATFORM_NRF52)
 #include "BBSExtFlash.h"
-Adafruit_LittleFS_Namespace::Adafruit_LittleFS& meshforgeSideloadExtFS() {
+Adafruit_LittleFS& meshforgeSideloadExtFS() {
     return bbsExtFS();
 }
 #endif
@@ -99,30 +101,6 @@ void BBSModule::setup() {
 }
 
 #if defined(NRF52_SERIES) && !defined(BBS_LITE)
-// Simple base64 decode — retained for chat-based KB commands via !kb DM
-static size_t b64decode(const char *in, uint8_t *out, size_t maxOut) {
-    static const uint8_t T[128] = {
-        64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
-        64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
-        64,64,64,64,64,64,64,64,64,64,64,62,64,64,64,63,
-        52,53,54,55,56,57,58,59,60,61,64,64,64,64,64,64,
-        64, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,
-        15,16,17,18,19,20,21,22,23,24,25,64,64,64,64,64,
-        64,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,
-        41,42,43,44,45,46,47,48,49,50,51,64,64,64,64,64
-    };
-    size_t len = strlen(in), o = 0;
-    uint32_t buf = 0; int bits = 0;
-    for (size_t i = 0; i < len && o < maxOut; i++) {
-        uint8_t c = (uint8_t)in[i];
-        if (c == '=' || c >= 128 || T[c] == 64) continue;
-        buf = (buf << 6) | T[c];
-        bits += 6;
-        if (bits >= 8) { bits -= 8; out[o++] = (buf >> bits) & 0xFF; }
-    }
-    return o;
-}
-
 ProcessMessage BBSModule::handleStateSurvival(const meshtastic_MeshPacket &mp,
                                                BBSSession &session, const char *text) {
     if (!text || text[0] == '\0') {
