@@ -339,11 +339,19 @@ ProcessMessage BBSModule::handleReceived(const meshtastic_MeshPacket &mp) {
             // Report what was written
             char kbMsg[180];
             uint32_t wSize = 0, gSize = 0;
-            if (extFS) {
-                File wf = extFS->open("/bbs/kb/wordle.bin", FILE_O_READ);
-                if (wf) { wSize = wf.size(); wf.close(); }
-                File gf = extFS->open("/bbs/kb/geo_us.bin", FILE_O_READ);
-                if (gf) { gSize = gf.size(); gf.close(); }
+            {
+                FSRoute rw = fsRoute("/__ext__/bbs/kb/wordle.bin");
+                File wf = fsGetFS(rw).open(rw.path, FILE_O_READ);
+                if (wf) {
+                    wSize = wf.size();
+                    wf.close();
+                }
+                FSRoute rg = fsRoute("/__ext__/bbs/kb/geo_us.bin");
+                File gf = fsGetFS(rg).open(rg.path, FILE_O_READ);
+                if (gf) {
+                    gSize = gf.size();
+                    gf.close();
+                }
             }
             snprintf(kbMsg, sizeof(kbMsg),
                      "KB: %s\nwordle:%u geo:%u",

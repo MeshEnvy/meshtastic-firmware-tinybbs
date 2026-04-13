@@ -2,7 +2,7 @@
 // BBSGeoLookup — Offline reverse geocoding
 //
 // Two modes:
-//   1. External flash: reads /bbs/kb/geo_us.bin (packed binary with spatial index, 378KB)
+//   1. External flash: reads /__ext__/bbs/kb/geo_us.bin (fsRoute → QSPI LittleFS)
 //   2. Embedded fallback: 500-city const array (BBSGeoDB.h, 11KB in firmware)
 //
 // Tries external flash first. Falls back to embedded if file missing.
@@ -14,7 +14,7 @@
 #include <cstring>
 
 // Constants
-#define GEO_DB_PATH     "/bbs/kb/geo_us.bin"
+#define GEO_DB_PATH     "/__ext__/bbs/kb/geo_us.bin"
 #define GEO_MAGIC       0x47454F31
 #define GEO_MAX_DIST_DEG2  (0.7f * 0.7f)  // ~50 miles
 
@@ -54,9 +54,8 @@ static bool geoLookupNearest(float lat, float lon, char *city, size_t cityLen) {
 static bool geoLookupFromExtFlash(float lat, float lon, char *city, size_t cityLen) {
     if (!city || cityLen == 0) return false;
     city[0] = '\0';
-    if (!extFS) return false;
-
-    File f = extFS->open(GEO_DB_PATH, FILE_O_READ);
+    FSRoute r = fsRoute(GEO_DB_PATH);
+    File f = fsGetFS(r).open(r.path, FILE_O_READ);
     if (!f) return false;
 
     // Read header
