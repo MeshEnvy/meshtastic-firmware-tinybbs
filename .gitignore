@@ -3,7 +3,7 @@ pio
 pio.tar
 
 # MeshForge generated data files (produced by extra_scripts/gen_meshforge_data.py)
-bbs-data/
+data/fs/__ext__/*.bin
 web
 web.tar
 

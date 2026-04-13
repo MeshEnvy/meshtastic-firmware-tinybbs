@@ -4,14 +4,14 @@ gen_meshforge_data.py — PlatformIO pre: extra_script for TinyBBS data generati
 Runs as part of the PlatformIO build (before compilation) to generate the
 binary data files that MeshForge will sideload onto the device after flashing.
 
-Output: firmware/bbs-data/  (gitignored)
+Output: firmware/data/fs/__ext__/  (generated *.bin gitignored)
   wordle.bin    — packed Wordle dictionary for binary search on device
   geo_us.bin    — packed US city geocoding index
   survival.bin  — packed emergency survival guide
 
 Referenced by firmware/meshforge.yaml:
   data:
-    - bbs-data/*.bin:/ext/bbs/kb
+    - data/fs/__ext__/*.bin:/__ext__/bbs/kb
 """
 
 Import("env")  # noqa: F821 — PlatformIO SCons environment
@@ -23,7 +23,7 @@ import subprocess
 # Resolve paths relative to the firmware project root (where platformio.ini lives)
 PROJECT_DIR = env["PROJECT_DIR"]  # noqa: F821
 SCRIPTS_DIR = os.path.join(PROJECT_DIR, "scripts")
-OUTPUT_DIR  = os.path.join(PROJECT_DIR, "bbs-data")
+OUTPUT_DIR  = os.path.join(PROJECT_DIR, "data", "fs", "__ext__")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

@@ -151,7 +151,7 @@ TIPS = {
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, "..", "bbs-data", "survival.bin")
+    output_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, "..", "data", "fs", "__ext__", "survival.bin")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     categories = list(TIPS.keys())

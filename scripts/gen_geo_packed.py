@@ -82,7 +82,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
     input_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, "cities1000.txt")
-    output_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(script_dir, "..", "bbs-data", "geo_us.bin")
+    output_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(script_dir, "..", "data", "fs", "__ext__", "geo_us.bin")
 
     if not os.path.exists(input_path):
         print(f"ERROR: {input_path} not found")

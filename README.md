@@ -44,7 +44,7 @@ pio run -e <target>   # e.g. pio run -e t-echo
 ```
 
 PlatformIO will automatically:
-1. Generate the data files (`bbs-data/*.bin`) via `extra_scripts/gen_meshforge_data.py`
+1. Generate the data files (`data/fs/__ext__/*.bin`) via `extra_scripts/gen_meshforge_data.py`
 2. Compile the firmware with the `meshenvy/meshforge-sideload` library
 
 ## Data files
@@ -54,7 +54,7 @@ Generated at build time and sideloaded by MeshForge after flashing. Declared in 
 ```yaml
 meshforge:
   data:
-    - bbs-data/*.bin:/ext/bbs/kb
+    - data/fs/__ext__/*.bin:/__ext__/bbs/kb
 ```
 
 | File | Description | Size |
