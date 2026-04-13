@@ -1,21 +1,15 @@
 #include "BBSModule_v2.h"
 #include "FSCommon.h"
 #include "BBSWordle.h"
-#ifndef BBS_LITE
 #include "BBSSurvival.h"
-#endif
 #include "BBSStorageLittleFS.h"
 #include "BBSStoragePSRAM.h"
-#ifndef BBS_LITE
 #include "BBSGeoLookup.h"
-#endif
 #ifdef NRF52_SERIES
 #include "BBSStorageExtFlash.h"
 
-#ifndef BBS_LITE
 #ifdef BBS_KB_LOADER
 // BBSKBLoader.h removed — data files are sideloaded by MeshForge after flashing
-#endif
 #endif
 #endif
 #include "Channels.h"
@@ -85,7 +79,7 @@ void BBSModule::setup() {
 #endif
 }
 
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
+#if defined(NRF52_SERIES)
 ProcessMessage BBSModule::handleStateSurvival(const meshtastic_MeshPacket &mp,
                                                BBSSession &session, const char *text) {
     if (!text || text[0] == '\0') {
@@ -529,10 +523,8 @@ ProcessMessage BBSModule::handleReceived(const meshtastic_MeshPacket &mp) {
                             aqsl.altitude  = flyer->position.altitude;
                             float lat = flyer->position.latitude_i / 1e7f;
                             float lon = flyer->position.longitude_i / 1e7f;
-#ifndef BBS_LITE
                             if (lat != 0.0f || lon != 0.0f)
                                 geoLookup(lat, lon, aqsl.location, sizeof(aqsl.location));
-#endif
                         }
 
                         // Prefix location with "AIR:" to mark as Air QSL
@@ -638,7 +630,7 @@ ProcessMessage BBSModule::dispatchState(const meshtastic_MeshPacket &mp, BBSSess
         case BBS_STATE_VAULT:          return handleStateVault(mp, session, text);
         case BBS_STATE_WASTELAND:      return handleStateWasteland(mp, session, text);
         case BBS_STATE_CHESS:          return handleStateChess(mp, session, text);
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
+#if defined(NRF52_SERIES)
         case BBS_STATE_SURVIVAL:       return handleStateSurvival(mp, session, text);
 #endif
         default:
@@ -800,7 +792,7 @@ ProcessMessage BBSModule::handleStateMain(const meshtastic_MeshPacket &mp, BBSSe
             session.state = BBS_STATE_IDLE;
             sendReply(mp, "73 de TinyBBS - bye!");
             break;
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
+#if defined(NRF52_SERIES)
         case 'e':
             session.state = BBS_STATE_SURVIVAL;
             {
@@ -832,9 +824,7 @@ ProcessMessage BBSModule::handleStateMain(const meshtastic_MeshPacket &mp, BBSSe
                       "[M]ail\n"
                       "[Q]SL\n"
                       "[G]ames\n"
-#ifndef BBS_LITE
                       "[E]mergency Guide\n"
-#endif
                       "[S]tats\n"
                       "[X]Exit");
             break;
@@ -1583,14 +1573,12 @@ void BBSModule::doQSLPost(const meshtastic_MeshPacket &req) {
     }
     // No fallback if sender has no GPS — we can't know their location
     if (lat != 0.0f || lon != 0.0f) {
-#ifndef BBS_LITE
         // Full edition: try external flash cities, then WiFi fallback
         if (!geoLookup(lat, lon, qsl.location, sizeof(qsl.location))) {
 #ifndef NRF52_SERIES
             reverseGeocode(lat, lon, qsl.location, sizeof(qsl.location));
 #endif
         }
-#endif
     }
 
     if (storage_->storeQSL(qsl)) {

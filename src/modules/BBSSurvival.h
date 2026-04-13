@@ -16,7 +16,7 @@
 //     len         uint8     length of tip text
 //     text        char[len] tip text (NOT null-terminated in file)
 
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
+#if defined(NRF52_SERIES)
 
 #include "FSCommon.h"
 #include <cstring>
@@ -146,4 +146,4 @@ static bool survivalGetTip(uint16_t catIdx, uint16_t tipIdx, char *buf, size_t b
     return true;
 }
 
-#endif // NRF52_SERIES && !BBS_LITE
+#endif // NRF52_SERIES

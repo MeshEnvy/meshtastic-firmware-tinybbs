@@ -168,7 +168,7 @@ class BBSModule : public SinglePortModule, private concurrency::OSThread {
     uint32_t uiMailTotal_ = 0;
     uint32_t uiStatsLastUpdate_ = 0;  // timestamp of last count refresh
 
-#if defined(NRF52_SERIES) && !defined(BBS_LITE)
+#if defined(NRF52_SERIES)
     ProcessMessage handleStateSurvival(const meshtastic_MeshPacket &mp, BBSSession &session, const char *text);
 #endif
 
