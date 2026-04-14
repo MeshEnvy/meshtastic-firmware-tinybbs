@@ -311,7 +311,7 @@ void XModemAdapter::handlePacket(meshtastic_XModem xmodemPacket)
                 spiLock->lock();
                 if (fsExists(activeRoute_)) fsRemove(activeRoute_);
                 mkdirParentsForRoute(activeRoute_);
-                file = fsOpenWrite(activeRoute_);
+                file = fsGetFS(activeRoute_).open(activeRoute_.path, FILE_O_WRITE);
                 spiLock->unlock();
                 if (file) {
                     captureSessionKey(xmodemPacket.buffer.bytes, openKeyLen);
@@ -329,7 +329,7 @@ void XModemAdapter::handlePacket(meshtastic_XModem xmodemPacket)
             activeRoute_ = fsRoute(filename);
             LOG_INFO("XModem: Transmit file %s", filename);
             spiLock->lock();
-            file = fsOpenRead(activeRoute_);
+            file = fsGetFS(activeRoute_).open(activeRoute_.path, FILE_O_READ);
             spiLock->unlock();
             if (file) {
                 captureSessionKey(xmodemPacket.buffer.bytes, openKeyLen);
