@@ -2,7 +2,7 @@
 """
 gen_survival_packed.py — Generate packed survival guide for external flash.
 
-Output: data/survival.bin
+Output: data/fs/__ext__/bbs/kb/survival.bin
 
 Binary format:
   magic       uint32  0x53555256 ("SURV")
@@ -151,7 +151,7 @@ TIPS = {
 
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, "..", "data", "fs", "__ext__", "survival.bin")
+    output_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, "..", "data", "fs", "__ext__", "bbs", "kb", "survival.bin")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     categories = list(TIPS.keys())

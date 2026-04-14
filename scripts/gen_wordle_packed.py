@@ -20,7 +20,7 @@ Usage:
 
 Defaults:
     word_list  → scripts/wordle_words.txt
-    output     → data/fs/__ext__/wordle.bin
+    output     → data/fs/__ext__/bbs/kb/wordle.bin
 """
 
 import os
@@ -43,7 +43,7 @@ def load_words(word_list_path):
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     word_list_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(script_dir, 'wordle_words.txt')
-    output_path    = sys.argv[2] if len(sys.argv) > 2 else os.path.join(script_dir, '..', 'data', 'fs', '__ext__', 'wordle.bin')
+    output_path    = sys.argv[2] if len(sys.argv) > 2 else os.path.join(script_dir, '..', 'data', 'fs', '__ext__', 'bbs', 'kb', 'wordle.bin')
 
     if not os.path.exists(word_list_path):
         print(f'ERROR: {word_list_path} not found')
