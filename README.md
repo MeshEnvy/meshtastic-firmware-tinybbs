@@ -44,18 +44,22 @@ pio run -e <target>   # e.g. pio run -e t-echo
 ```
 
 PlatformIO will automatically:
-1. Generate the data files (`data/fs/__ext__/*.bin`) via `extra_scripts/gen_meshforge_data.py`
-2. Compile the firmware with the `meshenvy/meshforge-sideload` library
+1. Generate the data files (`data/fs/__ext__/bbs/kb/*.bin`) via `extra_scripts/gen_meshforge_data.py`
+2. Compile firmware (post-flash uploads use Meshtastic XModem: Mesh Forge bundle `fs/`, or `meshtastic --upload` locally)
 
 ## Data files
 
-Generated at build time and sideloaded by MeshForge after flashing. Declared in `meshforge.yaml`:
+Generated at build time under `data/fs/__ext__/bbs/kb/` (gitignored). GitHub Actions copies `data/fs/` into the firmware archive as top-level `fs/` for the Mesh Forge web flasher.
 
-```yaml
-meshforge:
-  data:
-    - data/fs/__ext__/*.bin:/__ext__/bbs/kb
+`meshforge.yaml` (if present) only carries Mesh Forge UI hints (`tags` / `targets`); it does not list data blobs.
+
+CLI example (from this firmware directory, preserves paths under `data/fs/`):
+
+```bash
+meshtastic --port /dev/cu.usbmodem… --upload ./data/fs/ /
 ```
+
+The in-browser Mesh Forge flasher uses the same XModem mechanism on the bundle’s `fs/` tree. On nRF52, `/__ext__/…` routes to external QSPI when present; on ESP32 it maps onto LittleFS.
 
 | File | Description | Size |
 |------|-------------|------|
@@ -84,10 +88,6 @@ G               Games menu
 S               System stats
 H               Help
 ```
-
-## MeshForge sideload library
-
-TinyBBS uses the [`meshforge-sideload`](https://registry.platformio.org/libraries/meshenvy/meshforge-sideload) PlatformIO library for post-flash data delivery. The library listens on Serial for `0xBB`-framed file transfer frames, routes `/ext/` paths to external QSPI flash (nRF52) or LittleFS (ESP32), and is polled from `BBSModule::runOnce()` with no Meshtastic core changes required.
 
 ---
 
